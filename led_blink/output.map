@@ -1,0 +1,125 @@
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+ram              0x00008000         0x08000000         xw
+*default*        0x00000000         0xffffffff
+
+Linker script and memory map
+
+LOAD startup.o
+LOAD main.o
+
+.text           0x00008000      0x340
+                0x00008000                . = ALIGN (0x4)
+                0x00008000                _start = .
+ *(.text.startup)
+ .text.startup  0x00008000       0xc4 startup.o
+ .text.startup  0x000080c4       0x64 main.o
+                0x000080c4                main
+ *(.text*)
+ .text          0x00008128        0x0 startup.o
+ .text          0x00008128      0x218 main.o
+                0x00008158                mailbox_write
+                0x00008194                mailbox_read
+                0x000081ac                mailbox_tag_message
+                0x000082a8                led_on
+                0x00008328                delay
+                0x00008340                . = ALIGN (0x4)
+
+.glue_7         0x00008340        0x0
+ .glue_7        0x00008340        0x0 linker stubs
+
+.glue_7t        0x00008340        0x0
+ .glue_7t       0x00008340        0x0 linker stubs
+
+.vfp11_veneer   0x00008340        0x0
+ .vfp11_veneer  0x00008340        0x0 linker stubs
+
+.v4_bx          0x00008340        0x0
+ .v4_bx         0x00008340        0x0 linker stubs
+
+.iplt           0x00008340        0x0
+ .iplt          0x00008340        0x0 startup.o
+
+.rel.dyn        0x00008340        0x0
+ .rel.iplt      0x00008340        0x0 startup.o
+
+.bss            0x00008340        0x0
+                0x00008340                . = ALIGN (0x4)
+ *(.bss*)
+ .bss           0x00008340        0x0 startup.o
+ .bss           0x00008340        0x0 main.o
+                0x00008340                . = ALIGN (0x4)
+
+.rodata         0x00008340        0x0
+                0x00008340                . = ALIGN (0x4)
+ *(.rodata*)
+                0x00008340                . = ALIGN (0x4)
+
+.data           0x00008340        0x8
+                0x00008340                . = ALIGN (0x4)
+ *(.data*)
+ .data          0x00008340        0x4 startup.o
+                0x00008340                CoreReadyCount
+ .data          0x00008344        0x4 main.o
+                0x00008344                MAILBOX
+                0x00008348                . = ALIGN (0x4)
+
+.igot.plt       0x00008348        0x0
+ .igot.plt      0x00008348        0x0 startup.o
+
+.stack          0x00008348      0x800
+                0x00008348                . = ALIGN (0x8)
+                0x00008348                _stack_start = .
+                0x00008548                . = (. + 0x200)
+ *fill*         0x00008348      0x200 
+                0x00008548                __stack_pointer_core0 = .
+                0x00008748                . = (. + 0x200)
+ *fill*         0x00008548      0x200 
+                0x00008748                __stack_pointer_core1 = .
+                0x00008948                . = (. + 0x200)
+ *fill*         0x00008748      0x200 
+                0x00008948                __stack_pointer_core2 = .
+                0x00008b48                . = (. + 0x200)
+ *fill*         0x00008948      0x200 
+                0x00008b48                __stack_pointer_core3 = .
+                0x00008b48                . = ALIGN (0x8)
+OUTPUT(output.elf elf32-littlearm)
+
+.ARM.attributes
+                0x00000000       0x35
+ .ARM.attributes
+                0x00000000       0x25 startup.o
+ .ARM.attributes
+                0x00000025       0x39 main.o
+
+.comment        0x00000000       0x7f
+ .comment       0x00000000       0x7f main.o
+                                 0x80 (size before relaxing)
+
+.debug_info     0x00000000      0x589
+ .debug_info    0x00000000      0x589 main.o
+
+.debug_abbrev   0x00000000      0x249
+ .debug_abbrev  0x00000000      0x249 main.o
+
+.debug_loc      0x00000000      0x396
+ .debug_loc     0x00000000      0x396 main.o
+
+.debug_aranges  0x00000000       0x28
+ .debug_aranges
+                0x00000000       0x28 main.o
+
+.debug_ranges   0x00000000       0x30
+ .debug_ranges  0x00000000       0x30 main.o
+
+.debug_line     0x00000000      0x1a5
+ .debug_line    0x00000000      0x1a5 main.o
+
+.debug_str      0x00000000      0x2ed
+ .debug_str     0x00000000      0x2ed main.o
+                                0x36a (size before relaxing)
+
+.debug_frame    0x00000000       0xcc
+ .debug_frame   0x00000000       0xcc main.o
