@@ -135,11 +135,14 @@ dbg_saveregs:
 	str     x23, [x29], #8
 	str     x24, [x29], #8
 	str     x25, [x29], #8
-	str     x26, [x29], #8
+	str     x26, [x29], #8 
 	str     x27, [x29], #8
 	str     x28, [x29], #8
-	/* remember the extra x29,x30 push well pull then back in x0, x1 and bring stack back up 16 */
-	ldp	x0, x1, [sp], #16		
+	/* remember we pushed r29, r30 at irq start */
+	mov		x0, sp            // current stack position
+	mov     x2, #(32*8)       // that is where stack was when we saved them (32registers * 8 bytes).. I think needs checking
+	add     x2,  x2, x0       // Now add current stack position
+	ldp	x0, x1, [x2], #0	  // If I am right that is now original x29,x30 in x0, x1
 	str     x0, [x29], #8
 	str     x1, [x29], #8
    // also read and store some system registers
@@ -201,7 +204,6 @@ _vectors:
 	// synchronous
 	.balign  0x80
 	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 just so we dont waste space
-	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 for display we will pop inside dbg_saveregs
 	bl		register_save		 // Save corruptible registers .. it assumes x29,x30 saved
 	bl      dbg_saveregs
 	mov     x0, #0
@@ -215,9 +217,7 @@ _vectors:
 
 	// IRQ
 	.balign  0x80
-	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 just so we dont waste space
-	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 for display we will pop inside dbg_saveregs
-	bl		register_save		 // Save corruptible registers .. it assumes x29,x30 saved
+	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29
 	bl      dbg_saveregs
 	mov     x0, #1
 	bl      dbg_decodeexc
@@ -229,7 +229,6 @@ _vectors:
 	// FIQ
 	.balign  0x80
 	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 just so we dont waste space
-	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 for display we will pop inside dbg_saveregs
 	bl		register_save		 // Save corruptible registers .. it assumes x29,x30 saved
 	bl      dbg_saveregs
 	mov     x0, #2
@@ -242,7 +241,6 @@ _vectors:
 	// SError
 	.balign  0x80
 	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 just so we dont waste space
-	stp	x29, x30, [sp, #-16]!	 // Save x30 link register and x29 for display we will pop inside dbg_saveregs
 	bl		register_save		 // Save corruptible registers .. it assumes x29,x30 saved
 	bl      dbg_saveregs
 	mov     x0, #3
