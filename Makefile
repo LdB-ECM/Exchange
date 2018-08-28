@@ -23,16 +23,16 @@ all: kernel.elf
 #this emuerates the c file list changing .c to .o and stripping filepath and adding in build_dir
 OBJDIR := $(BUILD_DIR)
 
-#target1 enumerates .c files for processing to .o files .. output we call obj.c
+# this is the target for the foreach loops
 target = ${OBJDIR}/$(patsubst %.S,%.o, $(patsubst %.c,%.o, $(notdir ${1}) ) )
+# enumerates .c files for processing to .o files .. output we call obj.c
 obj.c :=
 define obj
   $(call target,${1}) : ${1} | 
   obj$(suffix ${1}) += $(call target,${1})
 endef
 
-#target2 enumerates .S files for processing to .o files .. output we call obj.S
-#target2 = ${OBJDIR}/$(patsubst %.S,%.o,$(notdir ${1}))
+# enumerates .S files for processing to .o files .. output we call obj.S
 obj.S :=
 define obj1
   $(call target,${1}) : ${1} | 
