@@ -18,7 +18,7 @@ SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
 FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/%.o, $(notdir $(SRC_FILES))))
 
 
-# Rule to is to make kernel.elf 
+# Rule for all requires kernel.elf 
 all: kernel.elf
 
 #this emuerates the c file list changing .c to .o and stripping filepath and adding in build_dir
