@@ -13,7 +13,7 @@ SRC_FILES = $(filter-out $(SOURCE_DIR)/main.c, $(wildcard $(SOURCE_DIR)/*.c))
 # To that add all the .S files in directory .. I went for capital S 
 SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
 
-# Create an empty entry
+# This is the effect of the for each loop
 FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/%.o, $(notdir $(SRC_FILES))))
 
 
