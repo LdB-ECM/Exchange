@@ -20,7 +20,7 @@ FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/
 # Rule to is to make kernel.elf 
 all: kernel.elf
 
-#this emuerates the c file list changing .c to .o and stripping filepath and adding in build_dir
+#Pass in the build_dir
 OBJDIR := $(BUILD_DIR)
 
 # this is the target for the both foreach loops
