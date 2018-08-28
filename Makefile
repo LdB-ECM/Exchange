@@ -20,11 +20,9 @@ FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/
 # Rule to is to make kernel.elf 
 all: kernel.elf
 
-#Pass in the build_dir
-OBJDIR := $(BUILD_DIR)
 
 # this is the target for the both foreach loops
-target = ${OBJDIR}/$(patsubst %.S,%.o, $(patsubst %.c,%.o, $(notdir ${1}) ) )
+target = $(BUILD_DIR)/$(patsubst %.S,%.o, $(patsubst %.c,%.o, $(notdir ${1}) ) )
 
 # enumerates .c files for processing to .o files .. output we call obj.c
 obj.c :=
