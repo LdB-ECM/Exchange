@@ -10,7 +10,7 @@ TARGET_DIR = target
 
 # Add the all .c files in src directory WITHOUT main.c
 SRC_FILES = $(filter-out $(SOURCE_DIR)/main.c, $(wildcard $(SOURCE_DIR)/*.c))
-# To that add all the .s files in directory
+# To that add all the .S files in directory .. I went for capital S 
 SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
 
 # Create an empty entry
