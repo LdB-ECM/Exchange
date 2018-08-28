@@ -10,22 +10,21 @@ TARGET_DIR = target
 
 # Add the all .c files in src directory WITHOUT main.c
 SRC_FILES = $(filter-out $(SOURCE_DIR)/main.c, $(wildcard $(SOURCE_DIR)/*.c))
-# To that add all the .S files in directory .. I went for capital S 
+# To that add all the .s files in directory
 SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
 
-# This is the effect of the for each loop
-# we can't use except at end because we must split process
+# Create an empty entry
 FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/%.o, $(notdir $(SRC_FILES))))
 
 
-# Rule for all requires kernel.elf 
+# Rule to is to make kernel.elf 
 all: kernel.elf
 
 #this emuerates the c file list changing .c to .o and stripping filepath and adding in build_dir
 OBJDIR := $(BUILD_DIR)
 
 #target1 enumerates .c files for processing to .o files .. output we call obj.c
-target = ${OBJDIR}/$(patsubst %.c,%.o,$(notdir ${1}))
+target = ${OBJDIR}/$(patsubst %.S,%.o, $(patsubst %.c,%.o, $(notdir ${1}) ) )
 obj.c :=
 define obj
   $(call target,${1}) : ${1} | 
@@ -33,11 +32,11 @@ define obj
 endef
 
 #target2 enumerates .S files for processing to .o files .. output we call obj.S
-target2 = ${OBJDIR}/$(patsubst %.S,%.o,$(notdir ${1}))
+#target2 = ${OBJDIR}/$(patsubst %.S,%.o,$(notdir ${1}))
 obj.S :=
 define obj1
-  $(call target2,${1}) : ${1} | 
-  obj1$(suffix ${1}) += $(call target2,${1})
+  $(call target,${1}) : ${1} | 
+  obj1$(suffix ${1}) += $(call target,${1})
 endef
 
 define SOURCES
@@ -56,7 +55,7 @@ $(eval $(call SOURCES,${SRC_FILES}))
  ${obj.S} : % :
 	@echo   asm file rule,  $^ -o $@
 
-#  rule says to build kernel.elf we need all those evaluated c + S objects
+#  rule says to build kernel.elf we need all those evaluated c objects
 kernel.elf : ${obj.S} ${obj.c} 
 	@echo  main file rule running
 	@echo  MAIN FILE: $(SOURCE_DIR)/main.c PROCESSED FILES: $(FILES_PROCESSED)
