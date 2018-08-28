@@ -57,7 +57,7 @@ $(eval $(call SOURCES,${SRC_FILES}))
 	@echo   asm file rule,  $^ -o $@
 
 #  rule says to build kernel.elf we need all those evaluated c + S objects
-kernel.elf : ${obj.c} ${obj.S} 
+kernel.elf : ${obj.S} ${obj.c} 
 	@echo  main file rule running
 	@echo  MAIN FILE: $(SOURCE_DIR)/main.c PROCESSED FILES: $(FILES_PROCESSED)
 
