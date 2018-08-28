@@ -14,6 +14,7 @@ SRC_FILES = $(filter-out $(SOURCE_DIR)/main.c, $(wildcard $(SOURCE_DIR)/*.c))
 SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
 
 # This is the effect of the for each loop
+# we can't use except at end because we must split process
 FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/%.o, $(notdir $(SRC_FILES))))
 
 
