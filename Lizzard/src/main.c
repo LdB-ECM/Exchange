@@ -6,15 +6,8 @@
 #include "sound.h"
 #include "rpi-GLES.h"
 
-static uint32_t check_sem = 0;
 static uint32_t check_hello = 0;
 static volatile uint32_t hellocount = 0;
-
-void Check_Semaphore (void) 
-{
-	printf("Core %u checked table semaphore and reports %i\n", GetCoreID(), table_loaded);
-	semaphore_dec(&check_sem);
-}
 
 void Core_SayHello(void)
 {
@@ -24,6 +17,69 @@ void Core_SayHello(void)
 	semaphore_dec(&check_hello);
 }
 
+
+static uint32_t shader1[18] = {  // Vertex Color Shader
+		0x958e0dbf, 0xd1724823,   /* mov r0, vary; mov r3.8d, 1.0 */
+		0x818e7176, 0x40024821,   /* fadd r0, r0, r5; mov r1, vary */
+		0x818e7376, 0x10024862,   /* fadd r1, r1, r5; mov r2, vary */
+		0x819e7540, 0x114248a3,   /* fadd r2, r2, r5; mov r3.8a, r0 */
+		0x809e7009, 0x115049e3,   /* nop; mov r3.8b, r1 */
+		0x809e7012, 0x116049e3,   /* nop; mov r3.8c, r2 */
+		0x159e76c0, 0x30020ba7,   /* mov tlbc, r3; nop; thrend */
+		0x009e7000, 0x100009e7,   /* nop; nop; nop */
+		0x009e7000, 0x500009e7,   /* nop; nop; sbdone */
+};
+
+static RENDER_STRUCT scene = { 0 };
+
+
+struct VC4_Vertex {
+	uint16_t  X;				// X in 12.4 fixed point
+	uint16_t  Y;				// Y in 12.4 fixed point
+	uint32_t  Z;				// Z in 4 byte float format
+	uint32_t  W;				// 1/W in byte float format
+	uint32_t  VRed;				// Varying 0 (Red)
+	uint32_t  VGreen;			// Varying 1 (Green)
+	uint32_t  VBlue;			// Varying 2 (Blue)
+} __packed;
+
+static float angle = 0.0;
+
+
+void DoRotate(double delta) {
+	double cosTheta, sinTheta;
+	angle += delta;
+	if (angle >= (3.1415926384 * 2)) angle -= (3.1415926384 * 2);
+	cosTheta = cos(angle);
+	sinTheta = sin(angle);
+
+	uint16_t centreX = (scene.renderWth / 2) << 4;						// triangle centre x
+	uint16_t centreY = (scene.renderHt / 4) << 4;						// triangle centre y
+	uint16_t half_shape_size = scene.renderWth/8;						// Half size of triangle
+	double x1 = 0;
+	double y1 = -half_shape_size;
+	double x2 = -half_shape_size;
+	double y2 = half_shape_size;
+	double x3 = half_shape_size;
+	double y3 = half_shape_size;
+
+	struct VC4_Vertex* vd = (struct VC4_Vertex*)(uintptr_t)GPUaddrToARMaddr(scene.vertexVC4);
+	vd[0].X = centreX + (int16_t)((cosTheta * x1 - sinTheta * y1) * 16);
+	vd[0].Y = centreY + (int16_t)((cosTheta * y1 + sinTheta * x1) * 16);
+	vd[1].X = centreX + (int16_t)((cosTheta * x2 - sinTheta * y2) * 16);
+	vd[1].Y = centreY + (int16_t)((cosTheta * y2 + sinTheta * x2) * 16);
+	vd[2].X = centreX + (int16_t)((cosTheta * x3 - sinTheta * y3) * 16);
+	vd[2].Y = centreY + (int16_t)((cosTheta * y3 + sinTheta * x3) * 16);
+}
+
+
+static volatile uint32_t mmu_count = 0;
+void CoreLoadMMU(void)
+{
+	mmu_init();
+	printf("Setup MMU on core %d done\n", GetCoreID());
+	mmu_count++;
+}
 
 static const char Spin[4] = { '|', '/', '-', '\\' };
 void main(void)
@@ -39,11 +95,24 @@ void main(void)
 		printf("Error: Unable to allocate memory");
 		return;
 	}
-	uint32_t bus_addr = V3D_mem_lock(handle);
 
-	// Draw a triangle
-	testTriangle(GetConsole_Width(), GetConsole_Height(),
-		ARMaddrToGPUaddr((void*)(uintptr_t)GetConsole_FrameBuffer()), bus_addr);
+	// Step1: Initialize scene
+	V3D_InitializeScene(&scene, GetConsole_Width(), GetConsole_Height());
+
+	// Step2: Add vertexes to scene
+	V3D_AddVertexesToScene(&scene);
+
+	// Step3: Add shader to scene
+	V3D_AddShadderToScene(&scene, &shader1[0], _countof(shader1));
+
+	// Step4: Setup render control
+	V3D_SetupRenderControl(&scene, GetConsole_FrameBuffer());
+
+	// Step5: Setup binning
+	V3D_SetupBinningConfig(&scene);
+
+	// Step 6: Render the scene
+	V3D_RenderScene(&scene);
 
 	// Display smart start details
 	displaySmartStart(printf);										
@@ -51,63 +120,30 @@ void main(void)
 	// Initialize audio
 	init_audio_jack();
 
-	// Initialize uart and print string
-	pl011_uart_init(115200);
-	pl011_uart_puts("Hello UART\n");
-
+	printf("Setting up MMU table\n");
 	/* Create MMU translation tables with Core 0 */
 	init_page_table();
+	printf("Starting MMU on core0\n");
+	/* setup mmu on core 0 */
+	mmu_init();
 
-    /* setup mmu on core 0 */
-	table_loaded = 1;
-    mmu_init();
-
-	/* setup mmu on core 1 */
-	semaphore_inc(&table_loaded);  // Lock the semaphore
-	printf("Setting up MMU on core 1\n");
-	CoreExecute(1, mmu_init);
-
-	/* setup mmu on core 2 */
-	semaphore_inc(&table_loaded);  // Lock the semaphore
-	printf("Setting up MMU on core 2\n");
-	CoreExecute(2, mmu_init);
-
-	/* setup mmu on core 3 */
-	semaphore_inc(&table_loaded);  // Lock the semaphore
-	printf("Setting up MMU on core 3\n");
-	CoreExecute(3, mmu_init);
-
-
-	// Dont print until table load done
-	semaphore_inc(&table_loaded);  // Lock the semaphore
-	printf("The cores have all started their MMU\n");
-	semaphore_dec(&table_loaded);  // Lock the semaphore
-
-
-	semaphore_inc(&table_loaded);
-	printf("Semaphore table_loaded locked .. check from other cores\n");
-	printf("Semaphore table_loaded at: %#p\n", &table_loaded);
-	semaphore_inc(&check_sem);
-	CoreExecute(1, Check_Semaphore);
-	semaphore_inc(&check_sem);
-	CoreExecute(2, Check_Semaphore);
-	semaphore_inc(&check_sem);
-	CoreExecute(3, Check_Semaphore);
+	/* Setup mmu on additional cores						*/
+	/* We can not use semaphores until MMU up on all cores	*/
+	/* They would all go for mmu_count at same time so walk */
+	/* them in one at a time                                */
+	printf("Setting up MMU on cores\n");
+	CoreExecute(1, CoreLoadMMU);
+	while (mmu_count == 0);
+	CoreExecute(2, CoreLoadMMU);
+	while (mmu_count == 1);
+	CoreExecute(3, CoreLoadMMU);
+	while (mmu_count == 2);
+	// Allow time for core3 print to complete .. again tricky because can't semaphore until all up
+	timer_wait(10000);
 	
-	semaphore_inc(&check_sem);
-	semaphore_dec(&table_loaded);
-	printf("Core 0 unlocked table semaphore .. re-run test\n");
-	semaphore_dec(&check_sem);
+	printf("The cores have all started their MMU\n");
 
-	semaphore_inc(&check_sem);
-	CoreExecute(1, Check_Semaphore);
-	semaphore_inc(&check_sem);
-	CoreExecute(2, Check_Semaphore);
-	semaphore_inc(&check_sem);
-	CoreExecute(3, Check_Semaphore);
-
-	semaphore_inc(&check_sem);  // need to wait for check to finish writing to screen
-	semaphore_dec(&check_sem); // lets be pretty and release sem
+	
 	printf("Testing semaphore queue ability\n");
 	semaphore_inc(&check_hello); // lock hello semaphore
 	CoreExecute(1, Core_SayHello);
@@ -138,15 +174,8 @@ void main(void)
 
 	while (1) {
 		DoRotate(0.01f);
-		testTriangle(GetConsole_Width(), GetConsole_Height(),
-			ARMaddrToGPUaddr((void*)(uintptr_t)GetConsole_FrameBuffer()), bus_addr);
+		V3D_RenderScene(&scene);
 		timer_wait(10);
-	
 	};
-
-	// Release resources
-	//V3D_mem_unlock(handle);
-	//V3D_mem_free(handle);
-
 
 }

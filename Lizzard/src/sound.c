@@ -54,9 +54,9 @@ void play_audio(void)
 	while (1) {
 		uint32_t i = 0;
 		while (i < (audio_end - audio_start)) {         // The subtraction is ptr arithmetic as its uint16_t* its half what it looks like
-			PWM[PWM_FIF1] = audio_start[i] >> 3;		// Write 16 bit sample right shift 3 for 13 
+			PWM[PWM_FIF1] = audio_start[i] >> 3;		// Write 16 bit sample right shift 3 for 13 bit out
 			i++;
-			PWM[PWM_FIF1] = audio_start[i] >> 3;		// Write 16 bit sample right shift 3 for 13 
+			PWM[PWM_FIF1] = audio_start[i] >> 3;		// Write 16 bit sample right shift 3 for 13 bit out
 			i++;
 			while ((PWM[PWM_STA] & PWM_FULL1) == 1) {};	// While fifo full wait
 		}

@@ -91,8 +91,6 @@ static __attribute__((aligned(4096))) VMSAv8_64_NEXTLEVEL_DESCRIPTOR Stage2virtu
 /* Stage3 ... Virtual mapping stage3 (final) ... basic minimum of a single table */
 static __attribute__((aligned(4096))) VMSAv8_64_STAGE2_BLOCK_DESCRIPTOR Stage3virtual[512] = { 0 };
 
-uint32_t table_loaded = 0;
-
 void init_page_table (void) {
 	uint32_t base = 0;
 	uint32_t  __attribute__((aligned(16))) msg[8] =
@@ -262,9 +260,6 @@ void mmu_init(void)
            (1<<0);     // set M, enable MMU
     __asm__ volatile ("msr sctlr_el1, %0; isb" : : "r" (r));
 
-	
-	/*release the semaphore */
-	semaphore_dec(&table_loaded);
 }
 
 uint64_t virtualmap (uint32_t phys_addr, uint8_t memattrs) {
