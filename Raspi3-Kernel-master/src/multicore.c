@@ -137,9 +137,9 @@ void core_wait_for_instruction()
 	printf("[CORE %d] [INFO] Hello from Core %d\n[CORE %d] [INFO] MMU Online\n", get_core_id(), get_core_id(), get_core_id());
 	
 	//This is a place the cores come when they are done and relaxing
-	bool core1_execute_local = false;
-	bool core2_execute_local = false;
-	bool core3_execute_local = false;
+	volatile bool core1_execute_local = false;
+	volatile bool core2_execute_local = false;
+	volatile bool core3_execute_local = false;
 	
 	get_core_ready(); //Toggle the ready flag and let another core be released
 	

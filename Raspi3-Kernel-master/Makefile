@@ -1,3 +1,15 @@
+ifeq ($(OS), Windows_NT)
+	#WINDOWS USE THESE DEFINITIONS
+	RM = -del /q 
+	CP = copy
+	SLASH = \\
+else
+	#LINUX USE THESE DEFINITIONS
+	RM = rm -f
+	CP = mv
+	SLASH = /
+endif 
+
 SOURCE = src/
 COMPILER_ROOT = g:/pi/gcc_linaro_7_1/bin/aarch64-elf-
 BUILD = build/
@@ -26,8 +38,8 @@ kernel8.img: $(ASMOBJS) $(COBJS) $(FONTOBJ) $(COBJSNOOP)
 	$(COMPILER_ROOT)objcopy $(BUILD)kernel.elf -O binary $(TARGET)
 
 clean:
-	del -q build\\*.o 
-	del -q $(TARGET)
+	$(RM) build$(SLASH)*.o 
+	$(RM) $(TARGET)
 
 run:
 	/home/Oliver/Development/qemu/aarch64-softmmu/qemu-system-aarch64 -M raspi3 -kernel kernel8.img -drive file=raspi.iso,if=sd,format=raw -serial stdio -d int,in_asm > qemu-output.info
