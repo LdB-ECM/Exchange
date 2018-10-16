@@ -139,6 +139,7 @@ void main(void)
 	CoreExecute(3, CoreLoadMMU);
 	while (mmu_count == 2);
 	// Allow time for core3 print to complete .. again tricky because can't semaphore until all up
+	// The key here is usually you wouldn't print you would just drag the cores online
 	timer_wait(10000);
 	
 	printf("The cores have all started their MMU\n");
@@ -149,6 +150,10 @@ void main(void)
 	CoreExecute(1, Core_SayHello);
 	CoreExecute(2, Core_SayHello);
 	CoreExecute(3, Core_SayHello);
+	// Hopefully it is clear the cores are queued up on the semaphore
+	// Only one can ever have the semaphore so the rest for a queue
+	// There is no way to know what order the cores will come thru in
+	// If you want to control the order you need a queued primitive.
 	printf("Cores queued we will waiting 10 seconds to release\n");
 
 	int i = 0;
@@ -176,6 +181,6 @@ void main(void)
 		DoRotate(0.01f);
 		V3D_RenderScene(&scene);
 		timer_wait(10);
-	};
+	}
 
 }
