@@ -106,7 +106,8 @@ void init_page_table (void) {
 			.Address = (uintptr_t)base << (21-12), 
 			.AF = 1, 
 			.SH = STAGE2_SH_INNER_SHAREABLE, 
-			.MemAttr = MT_NORMAL, .EntryType = 1,
+			.MemAttr = MT_NORMAL, 
+			.EntryType = 1,
 		};
 	}
 

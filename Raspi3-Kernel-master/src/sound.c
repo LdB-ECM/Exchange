@@ -36,9 +36,6 @@ volatile uint32_t* PWM	= (uint32_t*)(MMIO_BASE + PWM_BASE);
 volatile uint32_t* GPIO	= (uint32_t*)(MMIO_BASE + GPIO_BASE);
 volatile uint32_t* CM	= (uint32_t*)(MMIO_BASE + CM_BASE);
 
-const uint16_t *audio_start;
-const uint16_t *audio_end;
-
 void init_audio_jack(void)
 {
 	GPIO[GPIO_GPFSEL4] = (GPIO_FSEL0_ALT0 | GPIO_FSEL5_ALT0); // Set alt function to pins
@@ -49,7 +46,7 @@ void init_audio_jack(void)
 	PWM[PWM_CTL] = (PWM_USEF2 | PWM_PWEN2 | PWM_USEF1 | PWM_PWEN1 | PWM_CLRF1);
 }
 
-void play_audio(void *x)
+void play_audio (uint16_t *audio_start, uint16_t *audio_end)
 {
 	while (1) 
 	{

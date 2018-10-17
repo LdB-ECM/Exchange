@@ -1,3 +1,4 @@
+#include <stdarg.h>				// Needed for variadic arguments
 #include "include/stdint.h"
 #include "include/stdbool.h"
 #include "include/mbox.h"
@@ -108,24 +109,21 @@ bool mailbox_tag_message (uint32_t* response_buf,	// Pointer to response buffer
 			  ...)				// Variadic uint32_t values for call
 {
 	uint32_t __attribute__((aligned(16))) message[32];
-	__builtin_va_list list;
-	__builtin_va_start(list, data_count);		// Start variadic argument
+	va_list list;
+	va_start(list, data_count);				// Start variadic argument
 	message[0] = (data_count + 3) * 4;		// Size of message needed
 	message[data_count + 2] = 0;			// Set end pointer to zero
-	message[1] = 0;					// Zero response message
+	message[1] = 0;							// Zero response message
 	for (int i = 0; i < data_count; i++)
 	{
-		message[2 + i] = __builtin_va_arg(list, uint32_t);	// Fetch next variadic
+		message[2 + i] = va_arg(list, uint32_t);// Fetch next variadic
 	}
-	__builtin_va_end(list);						// variadic cleanup
-	if(((uint64_t)&(message[0])) % 16 != 0)
-	{
-		//printf("[ERROR] Unaligned!");
-	}
+	va_end(list);							// variadic cleanup
 	uint32_t addr = (uint32_t)(uintptr_t)&message[0];
 	asm volatile ("dc civac, %0" : : "r" (addr) : "memory");
-	mailbox_tag_write(ARM_addr_to_GPU_addr(&(message[0])));	// Write message to mailbox
-	mailbox_tag_read();					// Wait for write response
+	mailbox_tag_write(ARM_addr_to_GPU_addr(&message[0]));	// Write message to mailbox
+	mailbox_tag_read();								// Wait for write response
+	asm volatile ("dc civac, %0" : : "r" (addr) : "memory");
 	if(message[1] == 0x80000000)
 	{
 		if (response_buf)

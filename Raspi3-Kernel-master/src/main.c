@@ -15,6 +15,8 @@
 #include "include/delays.h"
 #include "include/scene.h"
 
+INCLUDE_BINARY_FILE(believer, "src/audio/believer.bin", ".rodata.believer");
+
 static uint32_t shader[18] = {  	// Vertex Color Shader
 		0x958e0dbf, 0xd1724823,	/* mov r0, vary; mov r3.8d, 1.0 */
 		0x818e7176, 0x40024821,	/* fadd r0, r0, r5; mov r1, vary */
@@ -74,7 +76,7 @@ void DoRotate(double delta) {
 
 void main()
 {
-	Init_EmbStdio(console_print_char);
+	Init_EmbStdio(console_print);
 	//Setup clocks first due to firmware bug
 	clocks_init();
 
@@ -99,15 +101,15 @@ void main()
 
 	multicore_init(); //Now core_execute is avalible to be run after this
 
-	printf("[CORE %d] [TEST] Testing 64bit unsigned int print %u\n", get_core_id(), 0xFFFFFFFFFFFFFFFF);
-	printf("[INFO] GPU memory split is: %d\n", get_gpu_memory_split());
+	
+	printf("[CORE %d] [TEST] Testing 64bit unsigned int print %llu\n", get_core_id(), 0xFFFFFFFFFFFFFFFF);
+	printf("[INFO] GPU memory split is: %u\n", get_gpu_memory_split());
+	printf("[INFO] Sound start %#x, Sound end %#x\n", &believer_start, &believer_end);
 
-	INCLUDE_BINARY_FILE(believer, "src/audio/believer.bin", ".rodata.believer");
-	audio_start = &believer_start;
-	audio_end = &believer_end;
-	core_execute(2, play_audio, NULL);
+	// execute function style 2 void (*) (void*, void*) matching play sound
+	core_execute(2, 2, &play_audio, (void*)&believer_start, (void*)&believer_end);
 
-	// echo everything back
+	//echo everything back
 	while(1) 
 	{
 		uart_send(uart_getc());

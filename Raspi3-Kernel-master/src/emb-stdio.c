@@ -21,7 +21,7 @@
 ****************************************************************************/
 static int MaxOutCount = INT_MAX;										// Max output count
 static int OutputCount = 0;												// Current output count								
-static void (*Console_WriteChar) (char) = NULL;							// The output handler function
+static void (*Console_WriteChar) (char*) = NULL;						// The output handler function
 
 /* EOF definition */
 #define EOF -1
@@ -36,7 +36,8 @@ enum integer_size {
     SHORT_SHORT_SIZE,
     SHORT_SIZE,
     REGULAR_SIZE,
-    LONG_SIZE
+    LONG_SIZE,
+	LONG_LONG_SIZE
 };
 
 /**
@@ -75,6 +76,7 @@ enum integer_size {
  *      - @c "hh"   for <code>signed char</code>  or <code>unsigned char</code>
  *      - @c "h"    for <code>signed short</code> or <code>unsigned short</code>
  *      - @c "l"    for <code>signed long</code>  or <code>unsigned long</code>
+ *      - @c "ll"   for <code>signed long long</code>  or <code>unsigned long long</code>
  *
  * 5. Conversion specifier character:
  *    1 of the following:
@@ -253,6 +255,11 @@ int _doprnt(const char *fmt, va_list ap, int (*putc_func) (int, void*), void* pu
             {
                 size = LONG_SIZE;
                 fmt++;
+				if (*fmt == 'l') 
+				{
+					size = LONG_LONG_SIZE;
+					fmt++;
+				}
             }
             else if (*fmt == 'h')
             {
@@ -302,7 +309,10 @@ int _doprnt(const char *fmt, va_list ap, int (*putc_func) (int, void*), void* pu
             case 'd':
                 /* Format a signed integer in base 10  */
                 base = 10;
-                if (size == LONG_SIZE)
+				if (size == LONG_LONG_SIZE) 
+				{
+					larg = va_arg(ap, long long);
+				} else if (size == LONG_SIZE)
                 {
                     larg = va_arg(ap, long);
                 }
@@ -361,8 +371,11 @@ int _doprnt(const char *fmt, va_list ap, int (*putc_func) (int, void*), void* pu
                 base = 2;
                 goto handle_unsigned;
 
-            handle_unsigned:
-                if (size == LONG_SIZE)
+			handle_unsigned:
+				if (size == LONG_LONG_SIZE)
+				{
+					ularg = va_arg(ap, unsigned long long);
+				} else if (size == LONG_SIZE)
                 {
                     ularg = va_arg(ap, unsigned long);
                 }
@@ -643,12 +656,27 @@ static int prn_to_buf(int c, void* buf)
 }
 
 
-static int prn_to_func(int c, void* prn_func)
+/*static int prn_to_func(int c, void* prn_func)
 {
 	void (*handler) (char) = prn_func;
 	if (OutputCount < MaxOutCount) {
 		handler(c);
 		OutputCount++;
+	}
+	return (int)c;
+}*/
+
+static char intbuf[256];
+
+static int blockprn_to_buf (int c, void* prn_func)
+{
+	intbuf[OutputCount] = (char)c;				// Hold the character in the internal buffer
+	OutputCount++;								// Inc the count of characters in buffer
+	if (OutputCount == sizeof(intbuf) - 1) {	// If the buffer is full write the buffer to function pointer         
+		void(*handler) (char*) = prn_func;
+		intbuf[sizeof(intbuf)-1] = 0;			    // Make asciiz
+		handler(&intbuf[0]);					// Write internal buffer data
+		OutputCount = 0;						// Buffer now empty .. start loading from zero again
 	}
 	return (int)c;
 }
@@ -673,7 +701,7 @@ static int prn_to_func(int c, void* prn_func)
 . 19Oct17 LdB
 .--------------------------------------------------------------------------*/
 
-void Init_EmbStdio (void (*handler) (char ch))
+void Init_EmbStdio (void (*handler) (char*))
 {
 	Console_WriteChar = handler;									// Set new handler function												
 }
@@ -701,7 +729,13 @@ int printf (const char *fmt, ...)
 		OutputCount = 0;											// Zero output count
 		MaxOutCount = INT_MAX;										// This is a maximum size function
 		va_start(args, fmt);										// Create argument list
-		count = _doprnt(fmt, args, prn_to_func, Console_WriteChar);	// Run conversions
+
+		count = _doprnt(fmt, args, blockprn_to_buf, Console_WriteChar);// Run conversions
+		/* If OutputCount > 0 there is still data in intbuf we need to flush it */
+		if (OutputCount > 0) {
+			intbuf[OutputCount] = 0;								// null terminate string 
+			Console_WriteChar(&intbuf[0]);							// Do flush
+		}
 		va_end(args);												// Done with argument list
 	}
 	return count;													// Return number of characters printed
@@ -775,7 +809,12 @@ int vprintf(const char* fmt, va_list arg)
 	if (Console_WriteChar) {
 		OutputCount = 0;											// Zero output count
 		MaxOutCount = INT_MAX;										// This is a maximum size function
-		count = _doprnt(fmt, arg, prn_to_func, Console_WriteChar);	// Do the output
+		count = _doprnt(fmt, arg, blockprn_to_buf, Console_WriteChar);	// Do the output
+		/* If OutputCount > 0 there is still data in intbuf we need to flush it */
+		if (OutputCount > 0) {
+			intbuf[OutputCount] = 0;								// null terminate string 
+			Console_WriteChar(&intbuf[0]);							// Do flush
+		}
 	}
 	return count;													// Return number of characters printed
 }
