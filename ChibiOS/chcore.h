@@ -228,7 +228,7 @@
  * @note    In this architecture the stack alignment is enforced to 64 bits.
  */
 #if __aarch64__ == 1
- // Alignment is 8 bytes
+ // Alignment is 16 bytes
 typedef uint8_t stkalign_t[16];
 #else
  // Alignment is 8 bytes
