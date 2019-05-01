@@ -25,7 +25,7 @@ IMGFILE = kernel8.img
 
 # The directory in which source files are stored.
 SOURCE = ${CURDIR}
-BUILD = build
+BUILD = Build
 
 
 # The name of the assembler listing file to generate.
