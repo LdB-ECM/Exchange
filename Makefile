@@ -1,70 +1,74 @@
-# desired directory setup
-BUILD_DIR = obj
-SOURCE_DIR = src
-TARGET_DIR = target
+# If cross compiling from windows use native GNU-Make 4.2.1
+# https://sourceforge.net/projects/ezwinports/files/
+# download "make-4.2.1-without-guile-w32-bin.zip" and set it on the enviroment path
+# There is no need to install cygwin or any of that sort of rubbish
 
-# The names of all object files that must be generated. 
-# Deduced from the files in source directory.
-# We filter out main.c
+ifeq ($(OS), Windows_NT)
+	#WINDOWS USE THESE DEFINITIONS
+	RM = -del /q /f
+	SLASH = \\
+	SWALLOW_OUTPUT = >nul 2>nul
+else
+	#LINUX USE THESE DEFINITIONS
+	RM = -rm -f
+	SLASH = /
+	SWALLOW_OUTPUT =
+endif 
 
 
-# Add the all .c files in src directory WITHOUT main.c
-SRC_FILES = $(filter-out $(SOURCE_DIR)/main.c, $(wildcard $(SOURCE_DIR)/*.c))
-# To that add all the .s files in directory
-SRC_FILES += $(wildcard $(SOURCE_DIR)/*.S)
-
-# This is the effect of for loops but only usefull for end if you need a list of all .o files
-FILES_PROCESSED := $(patsubst %.S,$(BUILD_DIR)/%.o, $(patsubst %.c,$(BUILD_DIR)/%.o, $(notdir $(SRC_FILES))))
+CFLAGS = -Wall -O3 -mcpu=cortex-a53+fp+simd -ffreestanding -nostartfiles -std=c11 -mstrict-align -fno-tree-loop-vectorize -fno-tree-slp-vectorize -Wno-nonnull-compare
+ARMGNU = aarch64-elf
+LINKERFILE = rpi64.ld
+SMARTSTART = SmartStart64.S
+IMGFILE = kernel8.img
 
 
-# Rule to is to make kernel.elf 
+# The directory in which source files are stored.
+SOURCE = ${CURDIR}
+BUILD = build
+
+
+# The name of the assembler listing file to generate.
+LIST = kernel.list
+
+# The name of the map file to generate.
+MAP = kernel.map
+
+# The names of all object files that must be generated. Deduced from the 
+# assembly code files in source.
+
+ASMOBJS = $(SOURCE)/$(SMARTSTART)
+COBJS = $(patsubst $(SOURCE)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE)/*.c))
+
+BINARY = $(IMGFILE)
+
 all: kernel.elf
 
+$(BUILD)/%.o: $(SOURCE)/%.s
+	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
 
-# this is the target for the both foreach loops
-target = $(BUILD_DIR)/$(patsubst %.S,%.o, $(patsubst %.c,%.o, $(notdir ${1}) ) )
+$(BUILD)/%.o: $(SOURCE)/%.S
+	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
 
-# enumerates .c files for processing to .o files .. output we call obj.c
-obj.c :=
-define obj
-  $(call target,${1}) : ${1} | 
-  obj$(suffix ${1}) += $(call target,${1})
-endef
+$(BUILD)/%.o: $(SOURCE)/%.c
+	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
 
-# enumerates .S files for processing to .o files .. output we call obj.S
-obj.S :=
-define obj1
-  $(call target,${1}) : ${1} | 
-  obj1$(suffix ${1}) += $(call target,${1})
-endef
-
-define SOURCES
-  $(foreach i,${1},$(eval $(call obj,${i} )))
-  $(foreach i,${1},$(eval $(call obj1,${i})))
-endef
-
-$(eval $(call SOURCES,${SRC_FILES}))
-
-
-#all those other c files will use this rule
- ${obj.c} : % :
-	@echo   other c file rule,  $^ -o $@
-
-#all asm files will use this rule
- ${obj.S} : % :
-	@echo   asm file rule,  $^ -o $@
-
-#  rule says to build kernel.elf we need all those evaluated c objects
-kernel.elf : ${obj.S} ${obj.c} 
-	@echo  main file rule running
-	@echo  MAIN FILE: $(SOURCE_DIR)/main.c PROCESSED FILES: $(FILES_PROCESSED)
-
-.DEFAULT_GOAL := kernel.elf
+kernel.elf: $(ASMOBJS) $(COBJS) 
+	$(ARMGNU)-gcc $(CFLAGS) $(ASMOBJS) $(COBJS) -T $(LINKERFILE) -o kernel.elf -lc -lm -lgcc
+	$(ARMGNU)-objdump -d kernel.elf > $(LIST)
+	$(ARMGNU)-objcopy kernel.elf -O binary DiskImg/$(BINARY)
+	$(ARMGNU)-nm -n kernel.elf > $(MAP)
 
 # Control silent mode  .... we want silent in clean
-.silent:clean
+.SILENT: clean
 
 # cleanup temp files
 clean:
-	@echo  the clean file rule
+	$(RM) $(MAP) 
+	$(RM) kernel.elf 
+	$(RM) $(LIST) 
+	$(RM) $(BUILD)$(SLASH)*.o 
+	$(RM) $(BUILD)$(SLASH)*.d 
+	echo CLEAN COMPLETED
+.PHONY: clean
 
