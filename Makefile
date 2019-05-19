@@ -35,7 +35,7 @@ LDFLAGS += -Wl,--defsym,_min_stack_size=4096 -Wl,--gc-sections
 
 # The directory from the makefile directory in which sets of C source files are stored add as many as you like
 SOURCE_C1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
-SOURCE_C2 = ${CURDIR}/$(CONTIKI)/core/
+SOURCE_C2 = ${CURDIR}/$(CONTIKI)/core
 
 # The directory from the makefile directory in which sets of asm .S or .s source files are stored add as many as you like
 SOURCE_A1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
@@ -43,33 +43,38 @@ SOURCE_A1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
 # The directory in which the build files are compiled too (.o and .so files) .. make sure it exists
 BUILD = ${CURDIR}/Build
 
+# define include paths .. as many as you need
+INCLUDE = -I${CURDIR}/$(CONTIKI)/cpu/pic24f -I${CURDIR}/$(CONTIKI)/core
+
 # This creates the names of all .S and .s files that must be compiled from your assembler directories above
-ASMOBJS = $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
-ASMOBJS += $(patsubst $(SOURCE_A1)/%.s,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.s))
+SFILES = $(wildcard $(SOURCE_A1)/*.S)
+SFILES += $(wildcard $(SOURCE_A1)/*.s)
+
+# This creates the names of .o files to produce in the build directory from the list of .S files
+SOFILES := $(patsubst %.S,$(BUILD)/%.o, $(notdir $(SFILES)))
 
 # This creates the names of all C files that must be compiled from the source directories above
-COBJS = $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
-COBJS += $(patsubst $(SOURCE_C2)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C2)/*.c))
+CFILES = $(wildcard $(SOURCE_C1)/*.c)
+CFILES += $(wildcard $(SOURCE_C2)/*.c)
+
+# This creates the names of .o files to produce in the build directory from the list of .S files
+COFILES := $(patsubst %.c,$(BUILD)/%.o, $(notdir $(CFILES)))
 
 #We are going to build the elf file called contiki.elf
 all: contiki.elf
 
-#Rule 1 assemble any .s files to .o in build directory add any extra source directories like first
-$(BUILD)/%.o: $(SOURCE_A1)/%.s
-	$(AS) -MMD -MP -g $(CFLAGS) -c  $< -o $@
+#Rule 1 assemble any .s or .S files to .o in build directory add any extra source directories like first
+$(SOFILES): $(SFILES)
+	$(AS) -MMD -MP -g $(CFLAGS) $(filter %/$(patsubst %.o,%.S,$(notdir $@)), $(SFILES)) -c -o $@
 
-#Rule 2 assemble any .S files to .o in build directory add any extra source directories like first
-$(BUILD)/%.o: $(SOURCE_A1)/%.S
-	$(AS) -MMD -MP -g $(CFLAGS) -c  $< -o $@
-
-#Rule 3 assemble any .c files to .o in build directory add any extra source directories you added above
-$(BUILD)/%.o: $(SOURCE_C1)/%.c $(SOURCE_C2)/%.c
-	$(CC) -MMD -MP -g $(CFLAGS) -c  $< -o $@
+#Rule 2 assemble any .c files to .o in build directory add any extra source directories you added above
+$(COFILES): $(CFILES)
+	$(CC) -MMD -MP -g $(CFLAGS) $(INCLUDE) $(filter %/$(patsubst %.o,%.c,$(notdir $@)), $(CFILES)) -c -o $@
 
 #To build contiki.elf we must compile all the .S, .S and .C files in the source directories 
 # the elf is then converted to your binary of whatever name you want
-contiki.elf: $(ASMOBJS) $(COBJS) 
-	$(LD) $(LDFLAGS) $(ASMOBJS) $(COBJS) -o contiki.elf
+contiki.elf: $(SOFILES) $(COFILES)
+	$(LD) $(LDFLAGS) $(SOFILES) $(COFILES) -o contiki.elf
 	$(OBJCOPY) contiki.elf -O binary whatever_name_you_want.bin
 
 # Control silent mode  .... we want silent in clean
