@@ -3,70 +3,76 @@
 # download "make-4.2.1-without-guile-w32-bin.zip" and set it on the enviroment path
 # There is no need to install cygwin or any of that sort of rubbish
 
+# This just defines a couple of command that differ from windows to linux used in clean
 ifeq ($(OS), Windows_NT)
 	#WINDOWS USE THESE DEFINITIONS
-	RM = -del /q /f
+	RM = -del /q
 	SLASH = \\
-	SWALLOW_OUTPUT = >nul 2>nul
 else
 	#LINUX USE THESE DEFINITIONS
 	RM = -rm -f
 	SLASH = /
-	SWALLOW_OUTPUT =
 endif 
 
+# This is your executables for compiling, linking, assembler etc
+CC       = xc16-gcc
+LD       = xc16-gcc
+AS       = xc16-as
+AR       = xc16-ar
+OBJCOPY  = xc16-objcopy
+STRIP    = xc16-strip
 
-CFLAGS = -Wall -O3 -mcpu=cortex-a53+fp+simd -ffreestanding -nostartfiles -std=c11 -mstrict-align -fno-tree-loop-vectorize -fno-tree-slp-vectorize -Wno-nonnull-compare
-ARMGNU = aarch64-elf
-LINKERFILE = rpi64.ld
-SMARTSTART = SmartStart64.S
-IMGFILE = kernel8.img
+# These are you compiler flags
+CFLAGS = -O1 -fno-strict-aliasing -Wall -ffunction-sections -mcpu=24FJ128GA010 
 
+# These are your linker flags
+LDFLAGS = -mcpu=24FJ128GA010 -T p24FJ128GA010.gld -Wl,-Map=contiki-explorer16.map -s
+LDFLAGS += -Wl,--defsym,_min_stack_size=4096 -Wl,--gc-sections
 
-# The directory in which source files are stored.
-SOURCE = ${CURDIR}
+# The directory from the makefile directory in which sets of C source files are stored add as many as you like
+SOURCE_C1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
+SOURCE_C2 = ${CURDIR}/$(CONTIKI)/core/
+
+# The directory from the makefile directory in which sets of asm source files are stored add as many as you like
+SOURCE_A1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
+
+# The directory in which the build files are compiled too (.o and .so files)
 BUILD = Build
 
+# The names of all object files that must be compiled from your assmbler directories above
+ASMOBJS = $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
+ASMOBJS += $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
 
-# The name of the assembler listing file to generate.
-LIST = kernel.list
+# The names of all C files that must be compiled from the source direc tories
+COBJS = $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
+COBJS += $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
 
-# The name of the map file to generate.
-MAP = kernel.map
+#We are going to build the elf file contiki.elf
+all: contiki.elf
 
-# The names of all object files that must be generated. Deduced from the 
-# assembly code files in source.
+#Rule 1 assemble any .s files to .o in build directory add any extra source directories like first
+$(BUILD)/%.o: $(SOURCE_A1)/%.s
+	$(AS) -MMD -MP -g $(CFLAGS) -c  $< -o $@
 
-ASMOBJS = $(SOURCE)/$(SMARTSTART)
-COBJS = $(patsubst $(SOURCE)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE)/*.c))
+#Rule 2 assemble any .S files to .o in build directory add any extra source directories like first
+$(BUILD)/%.o: $(SOURCE_A1)/%.S
+	$(AS) -MMD -MP -g $(CFLAGS) -c  $< -o $@
 
-BINARY = $(IMGFILE)
+#Rule 3 assemble any .c files to .o in build directory add any extra source directories
+$(BUILD)/%.o: $(SOURCE_C1)/%.c $(SOURCE_C2)/%.c
+	$(CC) -MMD -MP -g $(CFLAGS) -c  $< -o $@
 
-all: kernel.elf
-
-$(BUILD)/%.o: $(SOURCE)/%.s
-	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
-
-$(BUILD)/%.o: $(SOURCE)/%.S
-	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
-
-$(BUILD)/%.o: $(SOURCE)/%.c
-	$(ARMGNU)-gcc -MMD -MP -g $(CFLAGS) -c  $< -o $@ -lc -lm -lgcc
-
-kernel.elf: $(ASMOBJS) $(COBJS) 
-	$(ARMGNU)-gcc $(CFLAGS) $(ASMOBJS) $(COBJS) -T $(LINKERFILE) -o kernel.elf -lc -lm -lgcc
-	$(ARMGNU)-objdump -d kernel.elf > $(LIST)
-	$(ARMGNU)-objcopy kernel.elf -O binary DiskImg/$(BINARY)
-	$(ARMGNU)-nm -n kernel.elf > $(MAP)
+#To build contiki.elf we must compile all the .S, .S and .C files in the source directories 
+# the elf is then converted to yoru binary if you want
+contiki.elf: $(ASMOBJS) $(COBJS) 
+	$(LD) $(LDFLAGS) $(ASMOBJS) $(COBJS) -o contiki.elf
+	$(OBJCOPY) contiki.elf -O binary whatever_name_you_want.bin
 
 # Control silent mode  .... we want silent in clean
 .SILENT: clean
 
-# cleanup temp files
+# cleanup temp files in the build directory
 clean:
-	$(RM) $(MAP) 
-	$(RM) kernel.elf 
-	$(RM) $(LIST) 
 	$(RM) $(BUILD)$(SLASH)*.o 
 	$(RM) $(BUILD)$(SLASH)*.d 
 	echo CLEAN COMPLETED
