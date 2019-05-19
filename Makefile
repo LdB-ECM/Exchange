@@ -46,9 +46,8 @@ BUILD = ${CURDIR}/Build
 # define include paths .. as many as you need
 INCLUDE = -I${CURDIR}/$(CONTIKI)/cpu/pic24f -I${CURDIR}/$(CONTIKI)/core
 
-# This creates the names of all .S and .s files that must be compiled from your assembler directories above
+# This creates the names of all .S files that must be compiled from your assembler directories above
 SFILES = $(wildcard $(SOURCE_A1)/*.S)
-SFILES += $(wildcard $(SOURCE_A1)/*.s)
 
 # This creates the names of .o files to produce in the build directory from the list of .S files
 SOFILES := $(patsubst %.S,$(BUILD)/%.o, $(notdir $(SFILES)))
@@ -56,6 +55,7 @@ SOFILES := $(patsubst %.S,$(BUILD)/%.o, $(notdir $(SFILES)))
 # This creates the names of all C files that must be compiled from the source directories above
 CFILES = $(wildcard $(SOURCE_C1)/*.c)
 CFILES += $(wildcard $(SOURCE_C2)/*.c)
+#if you really want add individual named c files
 
 # This creates the names of .o files to produce in the build directory from the list of .S files
 COFILES := $(patsubst %.c,$(BUILD)/%.o, $(notdir $(CFILES)))
@@ -63,7 +63,7 @@ COFILES := $(patsubst %.c,$(BUILD)/%.o, $(notdir $(CFILES)))
 #We are going to build the elf file called contiki.elf
 all: contiki.elf
 
-#Rule 1 assemble any .s or .S files to .o in build directory add any extra source directories like first
+#Rule 1 assemble any .S files to .o in build directory add any extra source directories like first
 $(SOFILES): $(SFILES)
 	$(AS) -MMD -MP -g $(CFLAGS) $(filter %/$(patsubst %.o,%.S,$(notdir $@)), $(SFILES)) -c -o $@
 
