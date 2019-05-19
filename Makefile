@@ -3,6 +3,10 @@
 # download "make-4.2.1-without-guile-w32-bin.zip" and set it on the enviroment path
 # There is no need to install cygwin or any of that sort of rubbish
 
+# we will have two commands
+# make all
+# make clean
+
 # This just defines a couple of command that differ from windows to linux used in clean
 ifeq ($(OS), Windows_NT)
 	#WINDOWS USE THESE DEFINITIONS
@@ -43,11 +47,11 @@ BUILD = ${CURDIR}/Build
 ASMOBJS = $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
 ASMOBJS += $(patsubst $(SOURCE_A1)/%.s,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.s))
 
-# The names of all C files that must be compiled from the source directories above
+# This creates the names of all C files that must be compiled from the source directories above
 COBJS = $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
 COBJS += $(patsubst $(SOURCE_C2)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C2)/*.c))
 
-#We are going to build the elf file contiki.elf
+#We are going to build the elf file called contiki.elf
 all: contiki.elf
 
 #Rule 1 assemble any .s files to .o in build directory add any extra source directories like first
@@ -58,12 +62,12 @@ $(BUILD)/%.o: $(SOURCE_A1)/%.s
 $(BUILD)/%.o: $(SOURCE_A1)/%.S
 	$(AS) -MMD -MP -g $(CFLAGS) -c  $< -o $@
 
-#Rule 3 assemble any .c files to .o in build directory add any extra source directories
+#Rule 3 assemble any .c files to .o in build directory add any extra source directories you added above
 $(BUILD)/%.o: $(SOURCE_C1)/%.c $(SOURCE_C2)/%.c
 	$(CC) -MMD -MP -g $(CFLAGS) -c  $< -o $@
 
 #To build contiki.elf we must compile all the .S, .S and .C files in the source directories 
-# the elf is then converted to yoru binary if you want
+# the elf is then converted to your binary of whatever name you want
 contiki.elf: $(ASMOBJS) $(COBJS) 
 	$(LD) $(LDFLAGS) $(ASMOBJS) $(COBJS) -o contiki.elf
 	$(OBJCOPY) contiki.elf -O binary whatever_name_you_want.bin
