@@ -36,8 +36,8 @@ SOURCE_C2 = ${CURDIR}/$(CONTIKI)/core/
 # The directory from the makefile directory in which sets of asm source files are stored add as many as you like
 SOURCE_A1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
 
-# The directory in which the build files are compiled too (.o and .so files)
-BUILD = Build
+# The directory in which the build files are compiled too (.o and .so files) .. make sure it exists
+BUILD = ${CURDIR}/Build
 
 # The names of all object files that must be compiled from your assmbler directories above
 ASMOBJS = $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
