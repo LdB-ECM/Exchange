@@ -33,19 +33,19 @@ LDFLAGS += -Wl,--defsym,_min_stack_size=4096 -Wl,--gc-sections
 SOURCE_C1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
 SOURCE_C2 = ${CURDIR}/$(CONTIKI)/core/
 
-# The directory from the makefile directory in which sets of asm source files are stored add as many as you like
+# The directory from the makefile directory in which sets of asm .S or .s source files are stored add as many as you like
 SOURCE_A1 = ${CURDIR}/$(CONTIKI)/cpu/pic24f
 
 # The directory in which the build files are compiled too (.o and .so files) .. make sure it exists
 BUILD = ${CURDIR}/Build
 
-# The names of all object files that must be compiled from your assmbler directories above
+# This creates the names of all .S and .s files that must be compiled from your assembler directories above
 ASMOBJS = $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
-ASMOBJS += $(patsubst $(SOURCE_A1)/%.S,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.S))
+ASMOBJS += $(patsubst $(SOURCE_A1)/%.s,$(BUILD)/%.o,$(wildcard $(SOURCE_A1)/*.s))
 
-# The names of all C files that must be compiled from the source direc tories
+# The names of all C files that must be compiled from the source directories above
 COBJS = $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
-COBJS += $(patsubst $(SOURCE_C1)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C1)/*.c))
+COBJS += $(patsubst $(SOURCE_C2)/%.c,$(BUILD)/%.o,$(wildcard $(SOURCE_C2)/*.c))
 
 #We are going to build the elf file contiki.elf
 all: contiki.elf
