@@ -1,0 +1,75 @@
+const FONT* curFont = &ArialFont;
+if (curFont && curFont->vector_font)
+{
+	VECFONT_VERTEX2D* cv;
+	VECFONT_VERTEX2D* p = curFont->vec_data;
+	int xoffs = 50;
+	int yoffs = 100;
+	char* txt = "Arial";
+
+	bool pendwn = false;
+	for (unsigned int j = 0; j < _tcslen(txt); j++)
+	{
+		pendwn = false;
+		int apos = curFont->CDT[txt[j]].abspos / sizeof(VECFONT_VERTEX2D);
+		VECFONT_VERTEX2D* p = &curFont->vec_data[apos];
+		int i = 0;
+		while (i < curFont->CDT[txt[j]].instcount)
+		{
+			if (pendwn == false)
+			{
+				MoveToEx(dc, xoffs + p->x, yoffs + p->y, 0);
+				cv = p;
+				pendwn = true;
+			}
+			else {
+				if (p->quadbezoffgrid) {
+					VECFONT_VERTEX2D temp1, temp2;
+					VECFONT_VERTEX2D* prev = p;
+					VECFONT_VERTEX2D* next = p;
+					prev--;
+					temp1 = *prev;
+					if (temp1.quadbezoffgrid)
+					{
+						temp1.x = (p->x + prev->x) / 2;
+						temp1.y = (p->y + prev->y) / 2;
+					}
+					next++;
+					if (p->close) 
+						next = cv;
+					temp2 = *next;
+					if (temp2.quadbezoffgrid)
+					{
+						temp2.x = (p->x + next->x) / 2;
+						temp2.y = (p->y + next->y) / 2;
+					}
+					Bezier(&temp1, p, &temp2, xoffs, yoffs, dc);
+				} else LineTo(dc, xoffs + p->x, yoffs + p->y);
+			}
+			if (p->close)
+			{
+				if (p->quadbezoffgrid) {
+
+				} else LineTo(dc, xoffs + cv->x, yoffs + cv->y);
+				pendwn = false;
+			}
+
+			if (p->bezongrid)
+			{
+				MarkPoint(dc, p, xoffs, yoffs, 0xFF00);
+			}
+			else if (p->quadbezoffgrid)
+			{
+				MarkPoint(dc, p, xoffs, yoffs, 0xFF0000);
+			}
+			else {
+				MarkPoint(dc, p, xoffs, yoffs, 0xFFFF);
+			}
+
+			p++;
+			i++;
+		}
+		xoffs += curFont->CDT[txt[j]].charwidth;
+	}
+						
+}

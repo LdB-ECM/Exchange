@@ -1,0 +1,44 @@
+/*-DrawQuadBezier------------------------------------------------------------
+ Draws a quad bezier as used in TrueType fonts with the three control points
+ (X1, Y1), (X2, Y2) & (X3, Y3) in the colour specified.
+ --------------------------------------------------------------------------*/
+void DrawQuadBezier(HDC hdc, int16_t X1, int16_t Y1, int16_t X2, int16_t Y2, int16_t X3, int16_t Y3, COLORREF Colour)
+{
+	int32_t dx0, dy0, dx1, dy1, eulerMax0, eulerMax1, eulerMax;
+	dx0 = X2 - X1;													// Difference between X2 and X1 
+	dy0 = Y2 - Y1;													// Difference between Y2 and Y1
+	dx1 = X3 - X2;													// Difference between X3 and X2 
+	dy1 = Y3 - Y2;													// Difference between Y3 and Y2
+	if ((dx0 == 0) && (dy0 == 0) && (dx1 == 0) && (dy1 == 0))		// All 3 points are one and same
+		return;														// Nothing to do here its totally invalid	
+	SetDCPenColor(hdc, Colour);
+	if ((dx0 == 0) && (dy0 == 0)) {									// First 2 points are one and same
+		MoveToEx(hdc, X2, Y2, 0);
+		LineTo(hdc, X3, Y3);										// Draw a line from (x2,y2)<->(x3,y3)
+		return;														// Now exit
+	}
+	MoveToEx(hdc, X1, Y1, 0);
+	if ((dx1 == 0) && (dy1 == 0)) {									// Last two points are one and same	
+		LineTo(hdc, X2, Y2);										// Draw a line from (x1,y1)<->(x2,y2)
+		return;														// Now exit
+	}
+	eulerMax0 = abs(dx0);											// Preset eulerMax0 to abs(dx0)
+	if (abs(dy0) > eulerMax0) eulerMax0 = abs(dy0);					// If abs(dy0) is larger then set that as eulerMax0
+	eulerMax1 = abs(dx1);											// Preset eulerMax1 to abs(dx1)
+	if (abs(dy1) > eulerMax1) eulerMax1 = abs(dy1);					// If abs(dy1) is larger then set that as eulerMax1
+	eulerMax = eulerMax0;											// Preset eulerMax to eulerMax0
+	if (eulerMax1 > eulerMax) eulerMax = eulerMax1;					// If eulerMax1 is larger then set that as eulerMax
+	for (int16_t i = 1; i < eulerMax; i++) {
+		// Calc first generation lines using parametric equation
+		int32_t xt1 = ((dx0 * i) / eulerMax) + X1;					// Calc xt1
+		int32_t yt1 = ((dy0 * i) / eulerMax) + Y1;					// Calc yt1
+		int32_t xt2 = ((dx1 * i) / eulerMax) + X2;					// Calc xt2
+		int32_t yt2 = ((dy1 * i) / eulerMax) + Y2;					// Calc yt2
+		// Calc final point using parametric equation
+		int32_t oxt = (((xt2 - xt1) * i) / eulerMax) + xt1;			// Calc oxt
+		int32_t oyt = (((yt2 - yt1) * i) / eulerMax) + yt1;			// calc oyt
+		// Draw from old point to new point
+		LineTo(hdc, oxt, oyt);										// Draw line between last point and new point
+	}
+	LineTo(hdc, X3, Y3);// Draw line between to point (x3,y3) if not there
+}
