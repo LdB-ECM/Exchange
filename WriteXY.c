@@ -8,7 +8,7 @@ void WriteChar (uint16_t sx, uint16_t sy, uint16_t ch)   /* UINT16_T for charact
 	     fontbmp_ptr = (uint8_t*)&Arial_Narrow_23_TOPHALF[0];   // Point at top half of font
 		 ch -= 256;				            // Take 256 fron character as it's top half of font
 	}
-	fontbmp_ptr +=  (FONTCHAR_PITCH * Ch);			    // Set font to sprecific character
+	fontbmp_ptr +=  (FONTCHAR_PITCH * Ch);			    // Set font to specific character
     for (y = 0; y < FONTHEIGHT; y++)                           // For each line in height
     {
         uint8_t b = *fontbmp_ptr++;				// Fetch the byte from font	
