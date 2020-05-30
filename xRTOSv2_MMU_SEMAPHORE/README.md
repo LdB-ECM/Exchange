@@ -12,14 +12,11 @@ At the top of each task the core registers are now held there directly not down 
 
    OFFSET    |  CONTEXT SWITCH STACK LAYOUT
 ------------ | -------------
-0			       |  cpsr		  <- program status register to use on this task when running
-4            |	retaddr		<- The address to return to when running
->
-8			r0			<- r0	C caller argument and scratch register & result register
->
-12			r1			<- r1	C caller argument and scratch register & result register
->
-16			r2			<- r2	C caller argument and scratch register
+0			    | cpsr		  <- program status register to use on this task when running
+4            |	retaddr	  <- The address to return to when running
+8			    | r0			  <- r0	C caller argument and scratch register & result register
+12			    | r1			  <- r1	C caller argument and scratch register & result register
+16			    | r2			  <- r2	C caller argument and scratch register
 >
 20			r3			<- r3	C caller argument and scratch register
 >
