@@ -1,32 +1,36 @@
 
-# xRTOS ... PI 3 AARCH64 and PI 2,3 AARCH32
-As per usual you can simply copy the files in the DiskImg directory onto a formatted SD card and place in Pi to test
+# xRTOSv2 ... PI 2,3 AARCH32
+As per usual you can simply copy the files in the DiskImg directory onto a formatted SD card and place in Pi to test.
+To compile yourself will need to change the directory at top of makefile to match the compiler path on your machine. 
 >
 ![](https://github.com/LdB-ECM/Docs_and_Images/blob/master/Images/xRTOS_SEMS.jpg?raw=true)
 >
-So in this code we begin our work with synchronizing primitives, we start here with a simple Binary Semaphore.
+So this is a rework of the xRTOS system to give greater stack protect and work with either software of hardware semaphores.
+You can engage software semaphore by simply uncommenting the #define at line 10 of main.c, they are mainly used for debugging because they work with and without MMU.
 
-A binary semaphore is a synchronization object that can have only two states:
-1. Not taken.
-2. Taken.
+At the top of each task the core registers are now held there directly not down on the stack, the struct is defined in cpu.h but it sets up this as a block of memory
 
-Taking a binary semaphore brings it in the “taken” state. Trying to take a semaphore that is already taken will suspend the calling task indefinitely until the semaphore is "given" back. "Giving" a semaphore that is in the not taken state has no effect it will harmless pass thru.
->
-So we extend our start example so each task1 on each core will increment a simple counter. We wish to use printf to display that count but only 1 core at a time can use printf otherwise it scrambles the various outputs.
->
-So we create a screen semaphore at the very start of main.
->
-```
-static SemaphoreHandle_t screenSem;
-screenSem = xSemaphoreCreateBinary();
-```  
->
-Now before each task prints, the task takes the screen Semaphore. Thus if more than one core goes for the semaphore at the same time, one core will be granted access the other will queue up waiting for the semaphore to be give back. The task that has the semaphore moves to the screen position and prints it's count. Finally that task will give the semaphore back, at which point the waiting core will be able to take the semaphore and so it enters it routine and prints.
->
-The net result is each core can use the printf function to display it's count without conflict.
->
-Now there is an obvious problem that any task waiting to take the binary semaphore is still in the readylist and thus it using CPU power to basically sit in a loop waiting for the semaphore to be given back. As we only have 1 printf line of a simple integer the wait processing power is barely noticeable. However on complex samples that CPU time wasting could be significant. What we really want is a task waiting to take a binary semaphore to be taken from the readylist so it cost no CPU load (like vTaskDelay does). The task that has the binary semaphore as it gives the binary semaphore back should signal the waiting task effectively putting it back in the readyList so it can then run it's printf.
->
-So that is our next step to organize synchronization primitives that includes signaling.
->
-You will note we have at this stage still left out task priority. If we are going to have priority to the tasks then we will also need priority to the synchronization primitives. If multiple tasks are waiting for a resource then it would usually follow the highest priority task waiting should be given it first. An alternative approach might be when requesting a resource an independent resource priority is given to allow task priority and resource priority to differ. Whatever the case the moment we introduce priority we must consider it everywhere.
+/*      
+OFFSET        CONTEXT SWITCH STACK LAYOUT
+======	      ===========================
+0			cpsr		<- program status register to use on this task when running
+4			retaddr		<- The address to return to when running
+8			r0			<- r0	C caller argument and scratch register & result register
+12			r1			<- r1	C caller argument and scratch register & result register
+16			r2			<- r2	C caller argument and scratch register
+20			r3			<- r3	C caller argument and scratch register
+24			r4			<- r4	C callee-save register
+28			r5			<- r5	C callee-save register
+32			r6			<- r6	C callee-save register
+36			r7			<- r7	C callee-save register
+40			r8			<- r8	C callee-save register
+44			r9			<- r9	might be a callee-save register or not (on some variants of AAPCS it is a special register)
+48			r10			<- r10	C callee-save register
+52			r11			<- r11	C callee-save register
+56			r12			<- likely unused but save just in case
+60			r13			<- The sp value prior to the context switch 
+64			r14			<- The lr value prior to the context switch (which is usually a subroutne branch)
+68			exitAddr	<- Exit address to return when task completes operation
+*/
+
+The fiq interrupt saves the current task stack when entering and the switches to the FIQ stack during all the interrupt handler. This means none of the fiq interrupt handler uses the task stack anymore.
