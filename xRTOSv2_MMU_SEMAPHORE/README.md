@@ -9,8 +9,7 @@ So this is a rework of the xRTOS system to give greater stack protect and work w
 You can engage software semaphore by simply uncommenting the #define at line 10 of main.c, they are mainly used for debugging because they work with and without MMU.
 
 At the top of each task the core registers are now held there directly not down on the stack, the struct is defined in cpu.h but it sets up this as a block of memory
-
-/*      
+     
 OFFSET        CONTEXT SWITCH STACK LAYOUT
 ======	      ===========================
 0			cpsr		<- program status register to use on this task when running
@@ -31,6 +30,5 @@ OFFSET        CONTEXT SWITCH STACK LAYOUT
 60			r13			<- The sp value prior to the context switch 
 64			r14			<- The lr value prior to the context switch (which is usually a subroutne branch)
 68			exitAddr	<- Exit address to return when task completes operation
-*/
 
 The fiq interrupt saves the current task stack when entering and the switches to the FIQ stack during all the interrupt handler. This means none of the fiq interrupt handler uses the task stack anymore.
