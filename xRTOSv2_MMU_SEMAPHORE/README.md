@@ -14,9 +14,9 @@ At the top of each task the core registers are now held there directly not down 
 >
 * ======	      ===========================
 >
-* 0			cpsr		     <- program status register to use on this task when running
+- [0]			cpsr		     <- program status register to use on this task when running
 >
-4			retaddr		<- The address to return to when running
+- [4]			retaddr		<- The address to return to when running
 >
 8			r0			<- r0	C caller argument and scratch register & result register
 >
