@@ -10,12 +10,11 @@ You can engage software semaphore by simply uncommenting the #define at line 10 
 
 At the top of each task the core registers are now held there directly not down on the stack, the struct is defined in cpu.h but it sets up this as a block of memory
 
-#####
-OFFSET        CONTEXT SWITCH STACK LAYOUT
+* OFFSET        CONTEXT SWITCH STACK LAYOUT
 >
-======	      ===========================
+* ======	      ===========================
 >
-0			cpsr		     <- program status register to use on this task when running
+* 0			cpsr		     <- program status register to use on this task when running
 >
 4			retaddr		<- The address to return to when running
 >
