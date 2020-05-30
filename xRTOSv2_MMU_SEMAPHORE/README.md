@@ -30,5 +30,5 @@ At the top of each task the core registers are now held there directly not down 
 60			    | r13		  = The sp value prior to the context switch 
 64			    | r14		  = The lr value prior to the context switch (which is usually a subroutne branch)
 68			    | exitAddr	  = Exit address to return when task completes operation
-
+>
 The fiq interrupt saves the current task stack when entering and the switches to the FIQ stack during all the interrupt handler. This means none of the fiq interrupt handler uses the task stack anymore.
