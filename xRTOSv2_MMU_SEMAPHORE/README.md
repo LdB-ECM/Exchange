@@ -9,9 +9,11 @@ So this is a rework of the xRTOS system to give greater stack protect and work w
 You can engage software semaphore by simply uncommenting the #define at line 10 of main.c, they are mainly used for debugging because they work with and without MMU.
 
 At the top of each task the core registers are now held there directly not down on the stack, the struct is defined in cpu.h but it sets up this as a block of memory
-     
->OFFSET        CONTEXT SWITCH STACK LAYOUT
->======	      ===========================
+
+OFFSET        CONTEXT SWITCH STACK LAYOUT
+>
+======	      ===========================
+>
 >0			cpsr		     <- program status register to use on this task when running
 >4			retaddr		<- The address to return to when running
 >8			r0			<- r0	C caller argument and scratch register & result register
